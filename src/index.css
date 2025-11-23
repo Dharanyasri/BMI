@@ -10,58 +10,58 @@ All colors MUST be HSL.
   :root {
     /* Base colors - soft wellness theme */
     --background: 0 0% 100%;
-    --foreground: 0 0% 20%;
+    --foreground: 0 0% 0%;
 
     /* Card styling */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 0 0% 0%;
 
     /* Popover styling */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 0 0% 0%;
 
-    /* Primary - Pastel Green for wellness */
-    --primary: 120 30% 82%;
-    --primary-foreground: 0 0% 20%;
+    /* Primary - Pastel Green (#C5E5C5) */
+    --primary: 120 40% 84%;
+    --primary-foreground: 0 0% 0%;
 
-    /* Secondary - Pastel Blue for calm */
-    --secondary: 205 65% 91%;
-    --secondary-foreground: 0 0% 20%;
+    /* Secondary - Pastel Blue (#CDE7FB) */
+    --secondary: 206 82% 89%;
+    --secondary-foreground: 0 0% 0%;
 
     /* Muted - soft grey tones */
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 44%;
 
-    /* Accent - slightly darker pastel green */
-    --accent: 120 28% 75%;
-    --accent-foreground: 0 0% 20%;
+    /* Accent - pastel green variant */
+    --accent: 120 40% 84%;
+    --accent-foreground: 0 0% 0%;
 
     /* Status colors for BMI categories */
-    --success: 120 40% 75%;
+    --success: 120 45% 78%;
     --success-foreground: 120 100% 15%;
     
-    --warning: 38 92% 75%;
+    --warning: 38 92% 78%;
     --warning-foreground: 38 100% 20%;
     
-    --destructive: 0 72% 75%;
+    --destructive: 0 72% 78%;
     --destructive-foreground: 0 100% 20%;
 
-    /* Borders and inputs - very soft */
-    --border: 0 0% 93%;
-    --input: 0 0% 93%;
-    --ring: 120 30% 82%;
+    /* Borders and inputs - soft (#E5E5E5) */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 120 40% 84%;
 
-    /* Rounded corners */
-    --radius: 1rem;
+    /* Rounded corners - large radius */
+    --radius: 1.5rem;
 
     /* Custom wellness gradient */
-    --gradient-wellness: linear-gradient(135deg, hsl(120, 30%, 82%), hsl(205, 65%, 91%));
-    --gradient-hero: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(120, 30%, 95%));
+    --gradient-wellness: linear-gradient(135deg, hsl(120, 40%, 84%), hsl(206, 82%, 89%));
+    --gradient-hero: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(120, 40%, 92%));
     
     /* Soft shadows */
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.06);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

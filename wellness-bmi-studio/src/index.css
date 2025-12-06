@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Background */
+    --background: 150 40% 97%; /* Soft Mint White */
+    --foreground: 150 15% 15%; /* Dark Green-Gray Text */
+
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 150 15% 15%;
+
+    /* Primary – Fresh Mint Green */
+    --primary: 150 55% 65%; /* #7EDFB6 */
+    --primary-foreground: 150 20% 10%;
+
+    /* Secondary – Soft Aqua */
+    --secondary: 165 70% 85%; /* #CFF8F0 */
+    --secondary-foreground: 150 20% 15%;
+
+    /* Muted */
+    --muted: 150 25% 92%;
+    --muted-foreground: 150 10% 35%;
+
+    /* Accent – Pastel Green */
+    --accent: 145 50% 78%; /* soft pastel green */
+    --accent-foreground: 150 20% 15%;
+
+    /* BMI category colors */
+    --success: 140 65% 72%;
+    --warning: 45 98% 72%;
+    --destructive: 0 80% 72%;
+
+    /* Borders / Inputs */
+    --border: 150 20% 85%;
+    --input: 150 20% 85%;
+    --ring: 150 55% 65%;
+
+    /* Radius */
+    --radius: 1.5rem;
+
+    /* Gradients */
+    --gradient-wellness: linear-gradient(
+      135deg,
+      hsl(150 55% 85%),
+      hsl(165 70% 92%)
+    );
+
+    --gradient-hero: linear-gradient(
+      180deg,
+      hsl(150 50% 98%),
+      hsl(145 60% 92%)
+    );
+
+    /* Shadows */
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 6px 22px rgba(0, 0, 0, 0.10);
+  }
+}

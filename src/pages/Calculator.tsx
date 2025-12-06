@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calculator as CalcIcon, User, Ruler, Weight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const API_URL = "http://localhost:5000";
 
 type UnitSystem = "metric" | "imperial";
 type Gender = "male" | "female";
@@ -16,36 +19,184 @@ interface BMIResult {
 }
 
 const Calculator = () => {
+  const { toast } = useToast();
+
   const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
   const [gender, setGender] = useState<Gender>("male");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [result, setResult] = useState<BMIResult | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const getBMICategory = (bmi: number): { category: string; color: string } => {
-    if (bmi < 18.5) return { category: "Underweight", color: "text-warning" };
-    if (bmi < 25) return { category: "Normal Weight", color: "text-success" };
-    if (bmi < 30) return { category: "Overweight", color: "text-warning" };
-    return { category: "Obese", color: "text-destructive" };
+  // ⭐ AI State
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const getBMICategoryColor = (category: string) => {
+    if (category === "Underweight") return "text-warning";
+    if (category === "Normal") return "text-success";
+    if (category === "Overweight") return "text-warning";
+    return "text-destructive";
   };
 
-  const calculateBMI = () => {
-    let heightInMeters: number;
-    let weightInKg: number;
-
-    if (unitSystem === "metric") {
-      heightInMeters = parseFloat(height) / 100;
-      weightInKg = parseFloat(weight);
-    } else {
-      // Convert imperial to metric
-      heightInMeters = parseFloat(height) * 0.0254;
-      weightInKg = parseFloat(weight) * 0.453592;
+  // ⭐ Backend BMI
+  const calculateBMI = async () => {
+    if (!height || !weight) {
+      toast({
+        title: "Missing Values",
+        description: "Enter height and weight first.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    if (heightInMeters > 0 && weightInKg > 0) {
-      const bmi = weightInKg / (heightInMeters * heightInMeters);
-      const { category, color } = getBMICategory(bmi);
-      setResult({ bmi: parseFloat(bmi.toFixed(1)), category, color });
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API_URL}/api/bmi/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          height: parseFloat(height),
+          weight: parseFloat(weight),
+          gender,
+          units: unitSystem,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.message || "Backend error occurred.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setResult({
+        bmi: data.bmi,
+        category: data.category,
+        color: getBMICategoryColor(data.category),
+      });
+
+      toast({
+        title: "BMI Calculated",
+        description: `BMI: ${data.bmi} (${data.category})`,
+      });
+    } catch {
+      toast({
+        title: "Server Error",
+        description: "Cannot reach backend.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ⭐ Save BMI to history
+  const saveBMI = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast({
+        title: "Login Required",
+        description: "Please login to save your BMI history.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/bmi/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          height: parseFloat(height),
+          weight: parseFloat(weight),
+          gender,
+          units: unitSystem,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.message || "Unable to save record.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Saved!",
+        description: "Your BMI record has been added to history.",
+      });
+
+    } catch {
+      toast({
+        title: "Server Error",
+        description: "Could not connect to backend.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // ⭐⭐⭐ AI FUNCTION — HEALTH RECOMMENDATIONS
+  const getAIRecommendations = async () => {
+    if (!result) {
+      toast({
+        title: "No BMI Found",
+        description: "Please calculate BMI first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      setAiAdvice(null);
+
+      const res = await fetch(`${API_URL}/api/ai/recommend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bmi: result.bmi,
+          category: result.category,
+          gender,
+          age: 20,
+          activityLevel: "moderate",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "AI Error",
+          description: data.message || "AI failed to generate tips.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAiAdvice(data.advice);
+
+    } catch {
+      toast({
+        title: "Server Error",
+        description: "AI backend not responding.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -53,43 +204,45 @@ const Calculator = () => {
     setHeight("");
     setWeight("");
     setResult(null);
+    setAiAdvice(null);
   };
 
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* HEADER */}
         <div className="text-center mb-12">
           <div className="inline-block p-3 rounded-2xl bg-gradient-wellness mb-4">
             <CalcIcon className="w-8 h-8 text-foreground" />
           </div>
           <h1 className="text-4xl font-bold mb-4">BMI Calculator</h1>
-          <p className="text-muted-foreground text-lg">
-            Calculate your Body Mass Index and understand your health status
-          </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Calculator Form */}
+
+          {/* LEFT: FORM */}
           <Card className="border-2 shadow-card">
             <CardHeader>
               <CardTitle>Enter Your Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Unit System */}
+
+              {/* Units */}
               <div className="space-y-3">
                 <Label>Unit System</Label>
-                <RadioGroup 
-                  value={unitSystem} 
-                  onValueChange={(value) => setUnitSystem(value as UnitSystem)}
+                <RadioGroup
+                  value={unitSystem}
+                  onValueChange={(v) => setUnitSystem(v as UnitSystem)}
                   className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="metric" id="metric" />
-                    <Label htmlFor="metric" className="cursor-pointer">Metric (cm, kg)</Label>
+                    <Label htmlFor="metric">Metric (cm, kg)</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="imperial" id="imperial" />
-                    <Label htmlFor="imperial" className="cursor-pointer">Imperial (in, lbs)</Label>
+                    <Label htmlFor="imperial">Imperial (in, lbs)</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -100,18 +253,19 @@ const Calculator = () => {
                   <User className="w-4 h-4" />
                   Gender
                 </Label>
-                <RadioGroup 
-                  value={gender} 
-                  onValueChange={(value) => setGender(value as Gender)}
+
+                <RadioGroup
+                  value={gender}
+                  onValueChange={(v) => setGender(v as Gender)}
                   className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="male" id="male" />
-                    <Label htmlFor="male" className="cursor-pointer">Male</Label>
+                    <Label htmlFor="male">Male</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="female" id="female" />
-                    <Label htmlFor="female" className="cursor-pointer">Female</Label>
+                    <Label htmlFor="female">Female</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -125,10 +279,9 @@ const Calculator = () => {
                 <Input
                   id="height"
                   type="number"
+                  className="rounded-xl"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder={unitSystem === "metric" ? "170" : "67"}
-                  className="rounded-xl"
                 />
               </div>
 
@@ -141,23 +294,23 @@ const Calculator = () => {
                 <Input
                   id="weight"
                   type="number"
+                  className="rounded-xl"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  placeholder={unitSystem === "metric" ? "70" : "154"}
-                  className="rounded-xl"
                 />
               </div>
 
-              {/* Buttons */}
+              {/* FORM BUTTONS */}
               <div className="flex gap-3 pt-4">
-                <Button 
+                <Button
                   onClick={calculateBMI}
-                  className="flex-1 rounded-full bg-primary hover:bg-accent shadow-soft"
-                  disabled={!height || !weight}
+                  className="flex-1 rounded-full bg-primary"
+                  disabled={!height || !weight || loading}
                 >
-                  Calculate BMI
+                  {loading ? "Calculating..." : "Calculate BMI"}
                 </Button>
-                <Button 
+
+                <Button
                   onClick={resetForm}
                   variant="outline"
                   className="rounded-full"
@@ -165,13 +318,23 @@ const Calculator = () => {
                   Reset
                 </Button>
               </div>
+
+              {result && (
+                <Button
+                  onClick={saveBMI}
+                  className="w-full mt-4 rounded-full bg-secondary"
+                >
+                  Save to History
+                </Button>
+              )}
             </CardContent>
           </Card>
 
-          {/* Results */}
+          {/* RIGHT: RESULTS */}
           <div className="space-y-6">
             {result ? (
               <>
+                {/* BMI Result */}
                 <Card className="border-2 shadow-card">
                   <CardHeader>
                     <CardTitle>Your Results</CardTitle>
@@ -181,39 +344,55 @@ const Calculator = () => {
                       <div className="text-6xl font-bold mb-2">{result.bmi}</div>
                       <div className="text-sm text-muted-foreground">BMI Score</div>
                     </div>
+
                     <div className={`text-2xl font-semibold mb-4 ${result.color}`}>
                       {result.category}
-                    </div>
-                    <div className="h-4 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${
-                          result.category === "Normal Weight" ? "bg-success" :
-                          result.category === "Overweight" ? "bg-warning" :
-                          "bg-destructive"
-                        }`}
-                        style={{ width: `${Math.min((result.bmi / 40) * 100, 100)}%` }}
-                      />
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* EXPLANATION */}
                 <Card className="border-2 shadow-card bg-gradient-to-br from-primary/5 to-secondary/5">
                   <CardHeader>
                     <CardTitle className="text-lg">What This Means</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground leading-relaxed">
-                      {result.category === "Underweight" && 
-                        "Your BMI indicates you may be underweight. Consider consulting with a healthcare provider about healthy weight gain strategies."}
-                      {result.category === "Normal Weight" && 
-                        "Great! Your BMI is in the healthy range. Maintain your current lifestyle with balanced nutrition and regular exercise."}
-                      {result.category === "Overweight" && 
-                        "Your BMI suggests you may be overweight. Consider adopting healthier eating habits and increasing physical activity."}
-                      {result.category === "Obese" && 
-                        "Your BMI indicates obesity. We recommend consulting with a healthcare provider to develop a safe weight management plan."}
+                      {result.category === "Underweight" &&
+                        "You may be underweight. Consider consulting a healthcare provider."}
+
+                      {result.category === "Normal" &&
+                        "Great! Your BMI is in the healthy range. Maintain your lifestyle."}
+
+                      {result.category === "Overweight" &&
+                        "You may be overweight. Consider lifestyle changes and exercise."}
+
+                      {result.category === "Obese" &&
+                        "Your BMI indicates obesity. It's recommended to seek medical help."}
                     </p>
                   </CardContent>
                 </Card>
+
+                {/* ⭐ AI BUTTON */}
+                <Button
+                  onClick={getAIRecommendations}
+                  className="w-full rounded-full"
+                  disabled={aiLoading}
+                >
+                  {aiLoading ? "Getting AI Tips..." : "Get AI Health Recommendations"}
+                </Button>
+
+                {/* ⭐ AI Response Card */}
+                {aiAdvice && (
+                  <Card className="border-2 shadow-card mt-4">
+                    <CardHeader>
+                      <CardTitle className="text-lg">AI Health Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent className="whitespace-pre-line leading-relaxed">
+                      {aiAdvice}
+                    </CardContent>
+                  </Card>
+                )}
               </>
             ) : (
               <Card className="border-2 border-dashed shadow-card">
@@ -222,13 +401,11 @@ const Calculator = () => {
                     <CalcIcon className="w-10 h-10 text-muted-foreground" />
                   </div>
                   <h3 className="font-semibold mb-2">Enter Your Details</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Fill in your height and weight to calculate your BMI
-                  </p>
                 </CardContent>
               </Card>
             )}
           </div>
+
         </div>
       </div>
     </div>

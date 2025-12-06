@@ -1,0 +1,3 @@
+[submodule "wellness-bmi-studio"]
+	path = wellness-bmi-studio
+	url = https://github.com/Dharanyasri/BMI
